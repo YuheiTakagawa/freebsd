@@ -139,6 +139,8 @@ __FBSDID("$FreeBSD: releng/11.0/sys/kern/uipc_socket.c 300419 2016-05-22 13:10:4
 #include <sys/jail.h>
 #include <sys/syslog.h>
 #include <netinet/in.h>
+#include <netinet/in_pcb.h>
+#include <netinet/tcp_var.h>
 
 #include <net/vnet.h>
 
@@ -2678,6 +2680,59 @@ sosetopt(struct socket *so, struct sockopt *sopt)
 #endif
 			break;
 
+		case SO_REPAIR:
+			error = sooptcopyin(sopt, &optval, sizeof optval,
+			    sizeof optval);
+			if (error)
+				goto bad;
+			if (optval == 1) {
+				so->repair = 1;
+				so->repair_queue = TCP_NO_QUEUE;
+				so->sk_reuse = SK_FORCE_REUSE;
+			} else if (optval == 0) {
+				so->repair = 0;
+				so->sk_reuse = SK_NO_REUSE;
+			} else {
+				error = -EINVAL;
+			}
+			break;
+
+		case SO_REPAIR_QUEUE:
+			if (!so->repair)
+				error = -EPERM;
+			
+			error = sooptcopyin(sopt, &optval, sizeof optval,
+			    sizeof optval);
+			if (optval < TCP_QUEUE_NR)
+				so->repair_queue = optval;
+			else
+				error = -EINVAL;
+			break;
+
+		case SO_QUEUE_SEQ:
+			{
+			if (!so->repair)
+				error = -EPERM;
+
+			error = sooptcopyin(sopt, &optval, sizeof optval,
+			    sizeof optval);
+
+			printf("set SOQUEUE\n");
+			struct inpcb *in = (struct inpcb *)(so->so_pcb);
+			struct tcpcb *tp = (struct tcpcb *)(in->inp_ppcb);
+			printf("set struct set finish\n");
+
+			if (so->repair_queue == TCP_SEND_QUEUE){
+				tp->snd_nxt = optval;
+			}else if (so->repair_queue == TCP_RECV_QUEUE) {
+				tp->rcv_nxt = optval;
+			}
+			else
+				error = -EINVAL;
+			
+			}
+			break;
+
 		default:
 			if (V_socket_hhh[HHOOK_SOCKET_OPT]->hhh_nhooks > 0)
 				error = hhook_run_socket(so, sopt,
@@ -2851,6 +2906,48 @@ integer:
 #else
 			error = EOPNOTSUPP;
 #endif
+			break;
+
+		case SO_REPAIR:
+
+			optval = so->repair;
+			error = sooptcopyout(sopt, &optval, sizeof optval);
+			if (error)
+				goto bad;
+			break;
+
+		case SO_REPAIR_QUEUE:
+			if (so->repair) {
+				optval = so->repair_queue;
+				error = sooptcopyout(sopt, &optval, sizeof optval);
+				if (error)
+					goto bad;
+			}
+			break;
+
+		case SO_QUEUE_SEQ:
+			{
+			if (!so->repair)
+				error = -EPERM;
+
+			printf("get SOQUEUE\n");
+			struct inpcb *in = (struct inpcb *)(so->so_pcb);
+			struct tcpcb *tp = (struct tcpcb *)(in->inp_ppcb);
+			printf("get struct set finish\n");
+			
+			if (so->repair_queue == TCP_SEND_QUEUE) {
+				printf("snd seq %d\n", tp->snd_nxt);
+				optval = tp->snd_nxt;
+			}else if (so->repair_queue == TCP_RECV_QUEUE) {
+				printf("rcv seq %d\n", tp->rcv_nxt);
+				optval = tp->rcv_nxt;
+			}else
+				return -EINVAL;
+
+			error = sooptcopyout(sopt, &optval, sizeof optval);
+			if (error)
+				goto bad;
+			}
 			break;
 
 		case SO_LISTENQLIMIT:
