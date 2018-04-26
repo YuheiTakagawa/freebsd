@@ -158,7 +158,21 @@ typedef	__uintptr_t	uintptr_t;
 #define	SO_USER_COOKIE	0x1015		/* user cookie (dummynet etc.) */
 #define	SO_PROTOCOL	0x1016		/* get socket protocol (Linux name) */
 #define	SO_PROTOTYPE	SO_PROTOCOL	/* alias for SO_PROTOCOL (SunOS name) */
+#define SO_REPAIR	0x1017
+#define SO_REPAIR_QUEUE 0x1018
+#define SO_QUEUE_SEQ	0x1019
 #endif
+
+enum {
+	TCP_NO_QUEUE,
+	TCP_RECV_QUEUE,
+	TCP_SEND_QUEUE,
+	TCP_QUEUE_NR,
+};
+
+#define SK_NO_REUSE	0
+#define SK_CAN_REUSE	1
+#define SK_FORCE_REUSE	2
 
 /*
  * Space reserved for new socket options added by third-party vendors.
