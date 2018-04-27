@@ -621,6 +621,8 @@ in_pcbbind_setup(struct inpcb *inp, struct sockaddr *nam, in_addr_t *laddrp,
 				return (EADDRNOTAVAIL);
 		}
 		laddr = sin->sin_addr;
+		if (so->sk_reuse == SK_FORCE_REUSE)
+			goto success;
 		if (lport) {
 			struct inpcb *t;
 			struct tcptw *tw;
@@ -691,6 +693,7 @@ in_pcbbind_setup(struct inpcb *inp, struct sockaddr *nam, in_addr_t *laddrp,
 			}
 		}
 	}
+success:
 	if (*lportp != 0)
 		lport = *lportp;
 	if (lport == 0) {
