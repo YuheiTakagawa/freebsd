@@ -113,6 +113,8 @@ static int	tcp_connect(struct tcpcb *, struct sockaddr *,
 static int	tcp6_connect(struct tcpcb *, struct sockaddr *,
 		    struct thread *td);
 #endif /* INET6 */
+static void	tcp_repair_connect(struct tcpcb *, struct sockaddr *,
+		    struct thread *td);
 static void	tcp_disconnect(struct tcpcb *);
 static void	tcp_usrclosed(struct tcpcb *);
 static void	tcp_fill_info(struct tcpcb *, struct tcp_info *);
@@ -513,7 +515,11 @@ tcp_usr_connect(struct socket *so, struct sockaddr *nam, struct thread *td)
 	}
 	tp = intotcpcb(inp);
 	TCPDEBUG1();
-	if ((error = tcp_connect(tp, nam, td)) != 0)
+
+	if (so->repair) { 
+		tcp_repair_connect(tp, nam, td);
+		soisconnected(so);
+	}else if ((error = tcp_connect(tp, nam, td)) != 0)
 		goto out;
 #ifdef TCP_OFFLOAD
 	if (registered_toedevs > 0 &&
@@ -1305,6 +1311,15 @@ out:
 }
 #endif /* INET6 */
 
+static
+void tcp_repair_connect(struct tcpcb *tp, struct sockaddr *nam, struct thread *td)
+{
+	printf("tcp_repair_connect\n");
+	tcp_state_change(tp, TCPS_ESTABLISHED);
+	tcp_sendseqinit(tp);
+	tcp_rcvseqinit(tp);
+}
+
 /*
  * Export TCP internal state information via a struct tcp_info, based on the
  * Linux 2.6 API.  Not ABI compatible as our constants are mapped differently
@@ -1911,7 +1926,10 @@ tcp_disconnect(struct tcpcb *tp)
 	 * Neither tcp_close() nor tcp_drop() should return NULL, as the
 	 * socket is still open.
 	 */
-	if (tp->t_state < TCPS_ESTABLISHED) {
+	if (so->repair) {
+		printf("REPAIR CLOSE, NOT SENT FIN\n");
+		tp = tcp_close(tp);
+	} else if (tp->t_state < TCPS_ESTABLISHED) {
 		tp = tcp_close(tp);
 		KASSERT(tp != NULL,
 		    ("tcp_disconnect: tcp_close() returned NULL"));
