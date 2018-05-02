@@ -519,6 +519,7 @@ tcp_usr_connect(struct socket *so, struct sockaddr *nam, struct thread *td)
 	if (so->repair) { 
 		tcp_repair_connect(tp, nam, td);
 		soisconnected(so);
+		goto out;
 	}else if ((error = tcp_connect(tp, nam, td)) != 0)
 		goto out;
 #ifdef TCP_OFFLOAD
@@ -1259,6 +1260,8 @@ tcp_connect(struct tcpcb *tp, struct sockaddr *nam, struct thread *td)
 		tp->request_r_scale++;
 
 	soisconnecting(so);
+	if(so->repair)
+		return 0;
 	TCPSTAT_INC(tcps_connattempt);
 	tcp_state_change(tp, TCPS_SYN_SENT);
 	tp->iss = tcp_new_isn(tp);
@@ -1314,7 +1317,11 @@ out:
 static
 void tcp_repair_connect(struct tcpcb *tp, struct sockaddr *nam, struct thread *td)
 {
+	/* tp->irs is plus one in tcp_rcvseqinit, so tp->irs minus one */
 	printf("tcp_repair_connect\n");
+	tcp_connect(tp, nam, td);
+	tp->iss = tp->snd_nxt;
+	tp->irs = tp->rcv_nxt - 1;
 	tcp_state_change(tp, TCPS_ESTABLISHED);
 	tcp_sendseqinit(tp);
 	tcp_rcvseqinit(tp);
@@ -1912,6 +1919,7 @@ tcp_attach(struct socket *so)
  * Otherwise (hard), mark socket disconnecting and drop
  * current input data; switch states based on user close, and
  * send segment to peer (with FIN).
+		write(rst, chs, sizeof(chs));
  */
 static void
 tcp_disconnect(struct tcpcb *tp)
@@ -1928,6 +1936,8 @@ tcp_disconnect(struct tcpcb *tp)
 	 */
 	if (so->repair) {
 		printf("REPAIR CLOSE, NOT SENT FIN\n");
+		printf("rcv_adv %x, rcv_nxt %x, rcv_wnd %lx, irs %x\n", tp->rcv_adv, tp->rcv_nxt, tp->rcv_wnd, tp->irs);
+		printf("snd_una %x, snd_nxt %x, snd_max %x, snd_up %x, snd_recover %x, iss %x\n", tp->snd_una, tp->snd_nxt, tp->snd_max, tp->snd_up, tp->snd_recover, tp->iss);
 		tp = tcp_close(tp);
 	} else if (tp->t_state < TCPS_ESTABLISHED) {
 		tp = tcp_close(tp);
