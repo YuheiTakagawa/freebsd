@@ -1318,7 +1318,6 @@ static
 void tcp_repair_connect(struct tcpcb *tp, struct sockaddr *nam, struct thread *td)
 {
 	/* tp->irs is plus one in tcp_rcvseqinit, so tp->irs minus one */
-	printf("tcp_repair_connect\n");
 	tcp_connect(tp, nam, td);
 	tp->iss = tp->snd_nxt;
 	tp->irs = tp->rcv_nxt - 1;
@@ -1935,9 +1934,6 @@ tcp_disconnect(struct tcpcb *tp)
 	 * socket is still open.
 	 */
 	if (so->repair) {
-		printf("REPAIR CLOSE, NOT SENT FIN\n");
-		printf("rcv_adv %x, rcv_nxt %x, rcv_wnd %lx, irs %x\n", tp->rcv_adv, tp->rcv_nxt, tp->rcv_wnd, tp->irs);
-		printf("snd_una %x, snd_nxt %x, snd_max %x, snd_up %x, snd_recover %x, iss %x\n", tp->snd_una, tp->snd_nxt, tp->snd_max, tp->snd_up, tp->snd_recover, tp->iss);
 		tp = tcp_close(tp);
 	} else if (tp->t_state < TCPS_ESTABLISHED) {
 		tp = tcp_close(tp);

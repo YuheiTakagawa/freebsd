@@ -2717,10 +2717,8 @@ sosetopt(struct socket *so, struct sockopt *sopt)
 			error = sooptcopyin(sopt, &optval, sizeof optval,
 			    sizeof optval);
 
-			printf("set SOQUEUE\n");
 			struct inpcb *in = (struct inpcb *)(so->so_pcb);
 			struct tcpcb *tp = (struct tcpcb *)(in->inp_ppcb);
-			printf("set struct set finish\n");
 
 			if (so->repair_queue == TCP_SEND_QUEUE){
 				tp->snd_nxt = optval;
@@ -2930,16 +2928,12 @@ integer:
 			if (!so->repair)
 				error = -EPERM;
 
-			printf("get SOQUEUE\n");
 			struct inpcb *in = (struct inpcb *)(so->so_pcb);
 			struct tcpcb *tp = (struct tcpcb *)(in->inp_ppcb);
-			printf("get struct set finish\n");
 			
 			if (so->repair_queue == TCP_SEND_QUEUE) {
-				printf("snd seq %d\n", tp->snd_nxt);
 				optval = tp->snd_nxt;
 			}else if (so->repair_queue == TCP_RECV_QUEUE) {
-				printf("rcv seq %d\n", tp->rcv_nxt);
 				optval = tp->rcv_nxt;
 			}else
 				return -EINVAL;
