@@ -1226,6 +1226,10 @@ sosend_generic(struct socket *so, struct sockaddr *addr, struct uio *uio,
 	struct sockbuf *sb;
 
 	sb = &so->so_snd;
+	if (so->repair) {
+		if (so->repair_queue == TCP_RECV_QUEUE)
+			sb = &so->so_rcv;
+	}
 
 	if (uio != NULL)
 		resid = uio->uio_resid;
@@ -1509,6 +1513,11 @@ soreceive_generic(struct socket *so, struct sockaddr **psa, struct uio *uio,
 	struct sockbuf *sb;
 
 	sb = &so->so_rcv;
+
+	if (so->repair) {
+		if (so->repair_queue == TCP_SEND_QUEUE)
+			sb = &so->so_snd;
+	}
 
 	mp = mp0;
 	if (psa != NULL)
@@ -1867,6 +1876,8 @@ dontblock:
 			 * Notify the protocol that some data has been
 			 * drained before blocking.
 			 */
+			if ((pr->pr_flags & PR_WANTRCVD) &&
+			    (!so->repair)) {
 				SOCKBUF_UNLOCK(sb);
 				VNET_SO_ASSERT(so);
 				(*pr->pr_usrreqs->pru_rcvd)(so, flags);
@@ -2936,6 +2947,10 @@ integer:
 
 			struct inpcb *in = (struct inpcb *)(so->so_pcb);
 			struct tcpcb *tp = (struct tcpcb *)(in->inp_ppcb);
+
+			tp->snd_wnd = 131168;
+			tp->rcv_wnd = 65700;
+			tp->t_maxseg = 1460;
 			
 			if (so->repair_queue == TCP_SEND_QUEUE) {
 				optval = tp->snd_nxt;
