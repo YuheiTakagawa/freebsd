@@ -161,6 +161,7 @@ typedef	__uintptr_t	uintptr_t;
 #define SO_REPAIR	0x1017
 #define SO_REPAIR_QUEUE 0x1018
 #define SO_QUEUE_SEQ	0x1019
+#define SO_MSS_WINDOW	0x1020
 #endif
 
 enum {
@@ -173,6 +174,15 @@ enum {
 #define SK_NO_REUSE	0
 #define SK_CAN_REUSE	1
 #define SK_FORCE_REUSE	2
+
+struct msswnd {
+	__uint32_t	snd_wl1;
+	__uint32_t	snd_wnd;
+	__uint32_t	max_sndwnd;
+	__uint32_t	rcv_wnd;
+	__uint32_t	rcv_adv;
+	__uint32_t	t_maxseg;
+};
 
 /*
  * Space reserved for new socket options added by third-party vendors.

@@ -2748,6 +2748,22 @@ sosetopt(struct socket *so, struct sockopt *sopt)
 			}
 			break;
 
+		case SO_MSS_WINDOW:
+			{
+			struct inpcb *in = (struct inpcb *)(so->so_pcb);
+			struct tcpcb *tp = (struct tcpcb *)(in->inp_ppcb);
+			struct msswnd mw;
+			error = sooptcopyin(sopt, &mw, sizeof mw, sizeof mw);
+
+			tp->snd_wl1 = mw.snd_wl1;
+			tp->snd_wnd = mw.snd_wnd;
+			tp->max_sndwnd = mw.max_sndwnd;
+			tp->rcv_wnd = mw.rcv_wnd;
+			tp->rcv_adv = mw.rcv_adv;
+			tp->t_maxseg = mw.t_maxseg;
+			}
+			break;
+
 		default:
 			if (V_socket_hhh[HHOOK_SOCKET_OPT]->hhh_nhooks > 0)
 				error = hhook_run_socket(so, sopt,
@@ -2948,10 +2964,6 @@ integer:
 			struct inpcb *in = (struct inpcb *)(so->so_pcb);
 			struct tcpcb *tp = (struct tcpcb *)(in->inp_ppcb);
 
-			tp->snd_wnd = 131168;
-			tp->rcv_wnd = 65700;
-			tp->t_maxseg = 1460;
-			
 			if (so->repair_queue == TCP_SEND_QUEUE) {
 				optval = tp->snd_nxt;
 			}else if (so->repair_queue == TCP_RECV_QUEUE) {
@@ -2962,6 +2974,21 @@ integer:
 			error = sooptcopyout(sopt, &optval, sizeof optval);
 			if (error)
 				goto bad;
+			}
+			break;
+
+		case SO_MSS_WINDOW:
+			{
+			struct inpcb *in = (struct inpcb *)(so->so_pcb);
+			struct tcpcb *tp = (struct tcpcb *)(in->inp_ppcb);
+			struct msswnd mw;
+			mw.snd_wl1 = tp->snd_wl1;
+			mw.snd_wnd = tp->snd_wnd;
+			mw.max_sndwnd = tp->max_sndwnd;
+			mw.rcv_wnd = tp->rcv_wnd;
+			mw.rcv_adv = tp->rcv_adv;
+			mw.t_maxseg = tp->t_maxseg;
+			error = sooptcopyout(sopt, &mw, sizeof mw);
 			}
 			break;
 
