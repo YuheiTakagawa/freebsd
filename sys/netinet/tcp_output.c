@@ -1419,12 +1419,14 @@ send:
 	tcp_pcap_add(th, m, &(tp->t_outpkts));
 #endif
 
-	error = ip_output(m, tp->t_inpcb->inp_options, &tp->t_inpcb->inp_route,
-	    ((so->so_options & SO_DONTROUTE) ? IP_ROUTETOIF : 0), 0,
-	    tp->t_inpcb);
+	if (!(so->repair)) {
+		error = ip_output(m, tp->t_inpcb->inp_options, &tp->t_inpcb->inp_route,
+		    ((so->so_options & SO_DONTROUTE) ? IP_ROUTETOIF : 0), 0,
+		    tp->t_inpcb);
 
-	if (error == EMSGSIZE && tp->t_inpcb->inp_route.ro_rt != NULL)
-		mtu = tp->t_inpcb->inp_route.ro_rt->rt_mtu;
+		if (error == EMSGSIZE && tp->t_inpcb->inp_route.ro_rt != NULL)
+			mtu = tp->t_inpcb->inp_route.ro_rt->rt_mtu;
+    	}
     }
 #endif /* INET */
 

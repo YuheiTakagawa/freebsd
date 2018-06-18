@@ -1349,6 +1349,19 @@ restart:
 				space -= resid - uio->uio_resid;
 				resid = uio->uio_resid;
 			}
+
+			if (so->repair) {
+				if (so->repair_queue == TCP_RECV_QUEUE) {
+					SOCKBUF_LOCK(sb);
+					sbappendstream_locked(sb, top, 0);
+					SOCKBUF_UNLOCK(sb);
+					clen = 0;
+					control = NULL;
+					top = NULL;
+					continue;
+				}
+			}
+
 			if (dontroute) {
 				SOCK_LOCK(so);
 				so->so_options |= SO_DONTROUTE;

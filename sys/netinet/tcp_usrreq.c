@@ -895,6 +895,7 @@ tcp_usr_send(struct socket *so, int flags, struct mbuf *m,
 	isipv6 = nam && nam->sa_family == AF_INET6;
 #endif /* INET6 */
 	tp = intotcpcb(inp);
+
 	TCPDEBUG1();
 	if (control) {
 		/* TCP doesn't do control messages (rights, creds, etc) */
