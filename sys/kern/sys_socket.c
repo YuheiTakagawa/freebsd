@@ -67,6 +67,7 @@ __FBSDID("$FreeBSD: releng/11.0/sys/kern/sys_socket.c 302074 2016-06-21 22:19:06
 
 #include <netinet/in.h>
 #include <netinet/in_pcb.h>
+#include <netinet/tcp_var.h>
 
 #include <security/mac/mac_framework.h>
 
@@ -216,6 +217,15 @@ soo_ioctl(struct file *fp, u_long cmd, void *data, struct ucred *active_cred,
 			*(int *)data = 0;
 		else
 			*(int *)data = sbspace(&so->so_snd);
+		break;
+
+	case FIONUNWRITE:
+		{
+			struct inpcb *in = (struct inpcb *)(so->so_pcb);
+			struct tcpcb *tp = (struct tcpcb *)(in->inp_ppcb);
+			printf("una %x, snd_cc %d, nxt %x\n", tp->snd_una, sbavail(&so->so_snd), tp->snd_nxt);
+		*(int *)data = tp->snd_una + sbavail(&so->so_snd) - tp->snd_nxt;
+		}
 		break;
 
 	case FIOSETOWN:

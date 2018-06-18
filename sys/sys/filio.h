@@ -43,6 +43,7 @@
 /* Generic file-descriptor ioctl's. */
 #define	FIOCLEX		 _IO('f', 1)		/* set close on exec on fd */
 #define	FIONCLEX	 _IO('f', 2)		/* remove close on exec */
+#define FIONUNWRITE	_IOR('f', 128, int)	/* tcp repair,  get unsend size */
 #define	FIONREAD	_IOR('f', 127, int)	/* get # bytes to read */
 #define	FIONBIO		_IOW('f', 126, int)	/* set/clear non-blocking i/o */
 #define	FIOASYNC	_IOW('f', 125, int)	/* set/clear async i/o */
