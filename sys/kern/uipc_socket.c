@@ -2965,7 +2965,7 @@ integer:
 			struct tcpcb *tp = (struct tcpcb *)(in->inp_ppcb);
 
 			if (so->repair_queue == TCP_SEND_QUEUE) {
-				optval = tp->snd_nxt;
+				optval = tp->snd_una + sbavail(&so->so_snd);
 			}else if (so->repair_queue == TCP_RECV_QUEUE) {
 				optval = tp->rcv_nxt;
 			}else
