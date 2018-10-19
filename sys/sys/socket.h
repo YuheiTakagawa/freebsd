@@ -182,6 +182,7 @@ struct msswnd {
 	__uint32_t	rcv_wnd;
 	__uint32_t	rcv_adv;
 	__uint32_t	t_maxseg;
+	__uint32_t	snd_scale;
 };
 
 /*

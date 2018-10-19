@@ -2768,12 +2768,13 @@ sosetopt(struct socket *so, struct sockopt *sopt)
 			struct msswnd mw;
 			error = sooptcopyin(sopt, &mw, sizeof mw, sizeof mw);
 
-			tp->snd_wl1 = mw.snd_wl1;
+			tp->snd_wl1 = mw.snd_wl1 - 1;
 			tp->snd_wnd = mw.snd_wnd;
 			tp->max_sndwnd = mw.max_sndwnd;
 			tp->rcv_wnd = mw.rcv_wnd;
 			tp->rcv_adv = mw.rcv_adv;
 			tp->t_maxseg = mw.t_maxseg;
+			tp->snd_scale = mw.snd_scale;
 			}
 			break;
 
@@ -3001,6 +3002,7 @@ integer:
 			mw.rcv_wnd = tp->rcv_wnd;
 			mw.rcv_adv = tp->rcv_adv;
 			mw.t_maxseg = tp->t_maxseg;
+			mw.snd_scale = tp->snd_scale;
 			error = sooptcopyout(sopt, &mw, sizeof mw);
 			}
 			break;
