@@ -129,6 +129,9 @@ struct socket {
 
 	void *so_pspare[2];	/* packet pacing / general use */
 	int so_ispare[2];	/* packet pacing / general use */
+	int repair;
+	int repair_queue;
+	int sk_reuse;
 };
 
 /*
